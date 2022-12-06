@@ -1,6 +1,6 @@
 import os
 from utils import Abspath, Folders, ExcludeLoop, Files
-from maxwell_functions import CopyWellReport
+from maxwell_functions import CopyWellReport, DeleteFilesHistory, DeleteFolderRecursiveHistory
 from extractor import Extractor
 
 def main():
@@ -18,6 +18,8 @@ def main():
 
     for src_well, dst_well in zip(SRC_WELL_FOLDERS, DST_WELL_FOLDERS):
         CopyWellReport(src_well, dst_well)
+        # DeleteFilesHistory(dst_well)
+        # DeleteFolderRecursiveHistory(dst_well)
 
 def BatchExtractor():
     SRC_PATH = Abspath("Input source folder: ")

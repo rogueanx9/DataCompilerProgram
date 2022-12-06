@@ -1,6 +1,7 @@
 import os, zipfile
 from glob import iglob, glob
 from typing import List, Any
+from regex_handler import RegexHandler
 
 MEDIA_FILES = [".mp4", ".wmv", ".asf", ".bup", ".ifo", ".vob", ".avi"]
 
@@ -32,6 +33,7 @@ def Files(path: str, recursive: bool = False) -> List[str]:
     if not path: 
         print("[W] Path is Empty. Returning empty list")
         return []
+    path = RegexHandler(path)
     ast = "**" if recursive else "*"
     return [file for file in glob(os.path.join(path, ast), recursive=recursive) if os.path.isfile(file)]
 
@@ -39,6 +41,7 @@ def Folders(path: str, recursive: bool = False) -> List[str]:
     if not path: 
         print("[W] Path is Empty. Returning empty list")
         return []
+    path = RegexHandler(path)
     ast = "**" if recursive else "*"
     return [folder for folder in glob(os.path.join(path, ast), recursive=recursive) if os.path.isdir(folder)]
 

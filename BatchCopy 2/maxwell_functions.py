@@ -44,3 +44,31 @@ def CopyFiles(job_target: str, dst_target: str) -> None:
             shutil.copy2(file, report_target)
             print(f"Copied {os.path.basename(file)} to {report_target}")
             Extractor(os.path.join(report_target, os.path.basename(file)))
+
+def DeleteFiles(dst_target: str) -> None:
+    for file in Files(dst_target, recursive=True):
+        # Delete Media files
+        if os.path.splitext(file)[1].lower() in MEDIA_FILES:
+            os.remove(file)
+            print(f"Deleted {os.path.basename(file)} in {os.path.split(file)[0]}")
+
+def DeleteFilesHistory(dst_well: str) -> None:
+    print(f"\n## Start delete {os.path.basename(dst_well)}'s files ##")
+
+    dst_history = os.path.join(dst_well, "WELL_HISTORY")
+    DeleteFiles(dst_history)
+
+def DeleteFolderRecursive(dst_target: str) -> None:
+    for folder in Folders(dst_target):
+        DeleteFolderRecursive(folder)
+    files = Files(dst_target)
+    folders = Folders(dst_target)
+    if len(files) == 0 and len(folders) == 0:
+        os.rmdir(dst_target)
+        print(f"Deleted {os.path.basename(dst_target)} in {os.path.split(dst_target)[0]}")
+
+def DeleteFolderRecursiveHistory(dst_well: str) -> None:
+    print(f"\n## Start delete {os.path.basename(dst_well)}'s folder ##")
+
+    dst_history = os.path.join(dst_well, "WELL_HISTORY")
+    DeleteFolderRecursive(dst_history)
