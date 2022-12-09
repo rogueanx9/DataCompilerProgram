@@ -41,5 +41,8 @@ def main():
         input("Press ENTER to continue...")
         print()
 
+def main2():
+    list_files2(Abspath("Input path to list: "))
+
 if __name__ == "__main__":
     main()
