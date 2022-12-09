@@ -15,6 +15,7 @@ def MsgExtractor(path: str) -> None:
     try:
         msg = extract_msg.openMsg(path)
         msg.save(zip=zip_name, skipBodyNotFound=True)
+        print(f"Extracted {os.path.basename(path)} to {os.path.split(path)[0]}")
     except Exception as e:
         print(f"Cannot extract {os.path.basename(path)} as {e}. Skipping...")
         return
@@ -30,10 +31,17 @@ def MsgExtractor(path: str) -> None:
     if os.path.isfile(zip_name):
         os.remove(zip_name)
 
-    print(f"Extracted {os.path.basename(path)} to {os.path.split(path)[0]}")
-
 @NewFolderName
 def ZipExtractor(path: str) -> None:
-    with zipfile.ZipFile(path, 'r') as zip_ref:
-        zip_ref.extractall(os.path.split(path)[0])
-    print(f"Extracted {os.path.basename(path)} to {os.path.split(path)[0]}")
+    try:
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            if len(zip_ref.namelist()) > 1:
+                extract_path = os.path.splitext(path)[0]
+                if not os.path.exists(extract_path):
+                    os.mkdir(extract_path)
+                zip_ref.extractall(extract_path)
+            else:
+                zip_ref.extractall(os.path.split(path)[0])
+            print(f"Extracted {os.path.basename(path)} to {os.path.split(path)[0]}")
+    except Exception as e:
+        print(f"Cannot extract {os.path.basename(path)} as {e}. Skipping...")

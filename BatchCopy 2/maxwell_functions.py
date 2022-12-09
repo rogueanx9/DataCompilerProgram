@@ -18,6 +18,15 @@ def CopyWellReport(src_well: str, dst_well: str) -> None:
         dst_target = os.path.join(dst_history, os.path.basename(job), "DAILY REPORT")
         CopyFilesInJobFolder("12dlyrpt", job, dst_target)
 
+        dst_target = os.path.join(dst_history, os.path.basename(job), "GEOLOG")
+        CopyFilesInJobFolder("05geolog", job, dst_target)
+
+        dst_target = os.path.join(dst_history, os.path.basename(job), "MISC")
+        CopyFilesInJobFolder("21temp", job, dst_target)
+
+        dst_target = os.path.join(dst_history, os.path.basename(job), "MISC")
+        CopyFilesInJobFolder("20other", job, dst_target)
+
 def CopyFilesInJobFolder(folder_name: str, job: str, dst_target: str) -> None:
     job_target = os.path.join(job, folder_name)
     if not os.path.exists(job_target):
@@ -34,7 +43,7 @@ def CopyFiles(job_target: str, dst_target: str) -> None:
 
         # Ignore file size over 200 MB
         if os.stat(file).st_size > 200 * 1024 * 1024:
-            print(f"{file} size is over 120MB. Skipping...")
+            print(f"{file} size is over 200MB. Skipping...")
             continue
 
         report_target = os.path.join(dst_target, Subpath(job_target, os.path.split(file)[0]))
