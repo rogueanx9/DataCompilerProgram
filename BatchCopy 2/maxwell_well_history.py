@@ -1,6 +1,6 @@
 import os
 from utils import Abspath, Folders, ExcludeLoop, Files
-from maxwell_functions import CopyWellReport, DeleteFilesHistory, DeleteFolderRecursiveHistory
+from maxwell_functions import CopyWellReport, DeleteFilesHistory, DeleteFolderRecursiveHistory, CopyWellHistTemplate
 from extractor import Extractor
 
 def main():
@@ -26,6 +26,7 @@ def BatchExtractor():
     SRC_FILES = Files(SRC_PATH, recursive=True)
     for file in SRC_FILES:
         Extractor(file)
+
 
 if __name__ == "__main__":
     main()

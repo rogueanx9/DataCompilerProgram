@@ -1,6 +1,7 @@
 import os
 import shutil
-from utils import Folders, Files, Subpath, MEDIA_FILES
+from utils import Folders, Files, Subpath, MEDIA_FILES, ExcludeLoop, FileFiltered
+from file_handle import KeyInFile, WriteToTempFile, IsTempFile, TempFile
 from extractor import Extractor
 
 def CopyWellReport(src_well: str, dst_well: str) -> None:
@@ -21,38 +22,70 @@ def CopyWellReport(src_well: str, dst_well: str) -> None:
         dst_target = os.path.join(dst_history, os.path.basename(job), "GEOLOG")
         CopyFilesInJobFolder("05geolog", job, dst_target)
 
-        dst_target = os.path.join(dst_history, os.path.basename(job), "MISC")
-        CopyFilesInJobFolder("21temp", job, dst_target)
+        dst_target = os.path.join(dst_history, os.path.basename(job), "DAILY GEOLOG")
+        CopyFilesInJobFolder("14dlygeo", job, dst_target)
 
         dst_target = os.path.join(dst_history, os.path.basename(job), "MISC")
-        CopyFilesInJobFolder("20other", job, dst_target)
+        CopyFilesInJobFolder("21temp", job, dst_target, 3)
 
-def CopyFilesInJobFolder(folder_name: str, job: str, dst_target: str) -> None:
+        dst_target = os.path.join(dst_history, os.path.basename(job), "MISC")
+        CopyFilesInJobFolder("20other", job, dst_target, 3)
+
+def CopyFilesInJobFolder(folder_name: str, job: str, dst_target: str, depth_target: int = 99) -> None:
     job_target = os.path.join(job, folder_name)
     if not os.path.exists(job_target):
         print(f"{os.path.basename(job)} doesn't have {folder_name} folder")
     else:
-        CopyFiles(job_target, dst_target)
+        CopyFiles(job_target, dst_target, depth_target)
 
-def CopyFiles(job_target: str, dst_target: str) -> None:
+def CopyFiles(job_target: str, dst_target: str, depth_target: int = 99) -> None:
+    subpath_prev, subpath_count = "", 0
     for file in Files(job_target, recursive=True):
-        #Ignore media file
-        if os.path.splitext(file)[1].lower() in MEDIA_FILES:
-            print(f"{file} is media file. Skipping...")
+        subpath = Subpath(job_target, os.path.split(file)[0])
+        report_target = os.path.join(dst_target, subpath)
+        file_not_copied = os.path.join(report_target, "FILE NOT COPIED.txt")
+
+        # Check if there is a temp file not copied
+        if subpath != subpath_prev and IsTempFile(os.path.basename(file_not_copied)):
+            shutil.copy2(TempFile(os.path.basename(file_not_copied)), os.path.join(dst_target, subpath_prev))
+            os.remove(TempFile(os.path.basename(file_not_copied)))
+
+        # Check if file is in FILE NOT COPIED.txt
+        if os.path.isfile(file_not_copied) and KeyInFile(file, file_not_copied, True):
+            print(f"{file} already noted in {file_not_copied}. Skipping...")
             continue
 
-        # Ignore file size over 200 MB
-        if os.stat(file).st_size > 200 * 1024 * 1024:
-            print(f"{file} size is over 200MB. Skipping...")
+        # Filter file with more than depth_target subfolder
+        if subpath.count(os.sep) > depth_target:
+            print(f"{file} located in more than {depth_target} subfolder. Skipping...")
+            WriteToTempFile(os.path.basename(file_not_copied), file)
             continue
 
-        report_target = os.path.join(dst_target, Subpath(job_target, os.path.split(file)[0]))
+        # Filter file if parent directory has over max_files files copied
+        subpath_count = subpath_count + 1 if subpath == subpath_prev else 0
+        subpath_prev = subpath
+        if subpath_count > 500:
+            print(f"{os.path.split(file)[0]} has over 500 files copied. Cannot copy {os.path.basename(file)}!")
+            WriteToTempFile(os.path.basename(file_not_copied), file)
+            continue
+
+        # Filter file according to extension and file size
+        if FileFiltered(file, MEDIA_FILES, 200): 
+            WriteToTempFile(os.path.basename(file_not_copied), file)
+            continue
+
+        # Create folder if doesn't exist
         if not os.path.exists(report_target):
             os.makedirs(report_target)
+
+        # Copy file to folder target
         if not os.path.exists(os.path.join(report_target, os.path.basename(file))):
-            shutil.copy2(file, report_target)
-            print(f"Copied {os.path.basename(file)} to {report_target}")
-            Extractor(os.path.join(report_target, os.path.basename(file)))
+            try:
+                shutil.copy2(file, report_target)
+                print(f"Copied {os.path.basename(file)} to {report_target}")
+                Extractor(os.path.join(report_target, os.path.basename(file)))
+            except Exception as e:
+                print(f"Cannot copy {file} as {e}. Skipping...")
 
 def DeleteFiles(dst_target: str) -> None:
     for file in Files(dst_target, recursive=True):
@@ -81,3 +114,15 @@ def DeleteFolderRecursiveHistory(dst_well: str) -> None:
 
     dst_history = os.path.join(dst_well, "WELL_HISTORY")
     DeleteFolderRecursive(dst_history)
+
+def CopyWellHistTemplate():
+    file_to_copy = "\\\\Tenfps1vfs\\ptdm\\05-DATA\\DATA COMPILING\\USER GUIDE\\Data Compiling - Rogan Steeven Saulus\\Template\\Well History - Compile - Template2.xlsx"
+    wells = ExcludeLoop(Folders(input("WELLS: ")), name_shorter=os.path.basename)
+    for well in wells:
+        TARGET = os.path.join(well, "WELL_HISTORY")
+        if not os.path.exists(TARGET):
+            print(f"{os.path.basename(well)} has no WELL_HISTORY folder. Skipping...")
+            continue
+        if not os.path.exists(os.path.join(TARGET, os.path.basename(file_to_copy))):
+            shutil.copy2(file_to_copy, TARGET)
+            print(f"Copied well history template to {os.path.basename(well)}")

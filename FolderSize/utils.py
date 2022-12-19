@@ -2,7 +2,7 @@ import os
 from glob import iglob
 from typing import List
 
-MEDIA_FILES = [".mp4", ".wmv", ".asf", ".bup", ".ifo", ".vob", ".avi", ".mkv", ".mov"]
+MEDIA_FILES = [".mp4", ".wmv", ".asf", ".bup", ".ifo", ".vob", ".avi", ".mkv", ".mov", ".wav"]
 
 def Abspath(msg: str) -> str:
     path = input(msg)

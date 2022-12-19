@@ -1,9 +1,11 @@
-import os, zipfile
+import os, platform
 from glob import iglob, glob
 from typing import List, Any
 from regex_handler import RegexHandler
+import tempfile
+import shutil
 
-MEDIA_FILES = [".mp4", ".wmv", ".asf", ".bup", ".ifo", ".vob", ".avi"]
+MEDIA_FILES = [".mp4", ".wmv", ".asf", ".bup", ".ifo", ".vob", ".avi", ".mkv", ".mov", ".wav"]
 
 def Abspath(msg: str) -> str:
     path = input(msg)
@@ -44,6 +46,19 @@ def Folders(path: str, recursive: bool = False) -> List[str]:
     path = RegexHandler(path)
     ast = "**" if recursive else "*"
     return [folder for folder in glob(os.path.join(path, ast), recursive=recursive) if os.path.isdir(folder)]
+
+def FileFiltered(file:str, ext_exclude: List[str], max_size: int) -> bool:
+    #Ignore file with extension in ext_exclude 
+    if os.path.splitext(file)[1].lower() in ext_exclude:
+        print(f"{file} extention is in {','.join(ext_exclude)}. Filtered!")
+        return True
+
+    # Ignore file size over max_size in MB
+    if os.stat(file).st_size > max_size * 1024 * 1024:
+        print(f"{file} size is over {max_size}MB. Filtered!")
+        return True
+
+    return False
 
 def IsInt(any: Any) -> bool:
     try:
@@ -117,3 +132,24 @@ def Subpath(base_path: str, child_path: str) -> str:
         path = os.path.join(os.path.basename(child_path), path)
         child_path = os.path.split(child_path)[0]
     return path
+
+def Symlink(src: str, dst: str) -> None:
+    if platform.system() == "Windows":
+        def symlink_ms(source, link_name):
+            import ctypes
+            import ctypes.wintypes as wintypes
+            if os.path.exists(link_name):
+                df = ctypes.windll.kernel32.DeleteFileW
+                if df(link_name) == 0:
+                    print("Could not remove existing file:", link_name)
+                    print("You should remove the file manually through Explorer or an elevated cmd process. Skipping...")
+            csl = ctypes.windll.kernel32.CreateSymbolicLinkW
+            csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
+            csl.restype = ctypes.c_ubyte
+            flags = 1 if os.path.isdir(source) else 0
+            flags += 2 # For unprivileged mode. Requires Developer Mode to be activated.
+            if csl(link_name, source, flags) == 0:
+                raise ctypes.WinError()
+        return symlink_ms(src, dst)
+    else:
+        return os.symlink(src, dst)
