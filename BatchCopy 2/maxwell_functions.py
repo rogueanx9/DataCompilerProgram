@@ -1,7 +1,7 @@
 import os
 import shutil
 from utils import Folders, Files, Subpath, MEDIA_FILES, ExcludeLoop, FileFiltered
-from file_handle import KeyInFile, WriteToTempFile, IsTempFile, TempFile
+from file_handle import KeyInFile, WriteToTempFile, IsTempFile, TempFile, CacheTempFile
 from extractor import Extractor
 
 def CopyWellReport(src_well: str, dst_well: str) -> None:
@@ -47,18 +47,21 @@ def CopyFiles(job_target: str, dst_target: str, depth_target: int = 99) -> None:
 
         # Check if there is a temp file not copied
         if subpath != subpath_prev and IsTempFile(os.path.basename(file_not_copied)):
-            shutil.copy2(TempFile(os.path.basename(file_not_copied)), os.path.join(dst_target, subpath_prev))
+            prev_target = os.path.join(dst_target, subpath_prev)
+            if not os.path.isdir(prev_target):
+                os.makedirs(prev_target)
+
+            shutil.copy2(TempFile(os.path.basename(file_not_copied)), prev_target)
             os.remove(TempFile(os.path.basename(file_not_copied)))
 
-        # Check if file is in FILE NOT COPIED.txt
-        if os.path.isfile(file_not_copied) and KeyInFile(file, file_not_copied, True):
-            print(f"{file} already noted in {file_not_copied}. Skipping...")
-            continue
+        # Check if file is in FILE NOT COPIED.txt. TODO: Cache in Memory. It is so slow now.
+        # if os.path.isfile(file_not_copied) and KeyInFile(file, file_not_copied, True):
+        #     print(f"{file} already noted in {file_not_copied}. Skipping...")
+        #     continue
 
         # Filter file with more than depth_target subfolder
         if subpath.count(os.sep) > depth_target:
             print(f"{file} located in more than {depth_target} subfolder. Skipping...")
-            WriteToTempFile(os.path.basename(file_not_copied), file)
             continue
 
         # Filter file if parent directory has over max_files files copied

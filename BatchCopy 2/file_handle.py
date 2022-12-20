@@ -1,4 +1,4 @@
-import os, tempfile
+import os, tempfile, shutil, time
 from typing import List
 
 def WriteToFile(path: str, content: str) -> None:
@@ -6,12 +6,26 @@ def WriteToFile(path: str, content: str) -> None:
     if os.path.splitext(path)[1].lower() not in target_ext:
         raise Exception(f"Path should be a file with an extension of {','.join(target_ext)}")
 
-    f = open(path, 'a')
-    f.write(f"{content}\n")
+    with open(path, 'a') as f:
+        f.write(f"{content}\n")
 
 def WriteToTempFile(filename: str, content: str) -> None:
     file_path = os.path.join(tempfile.gettempdir(), filename)
     WriteToFile(file_path, content)
+
+def CacheTempFile(file: str, delete: bool) -> str:
+    if not os.path.isfile(file):
+        return file
+        
+    target = os.path.join(tempfile.gettempdir(), os.path.basename(file))
+    if not delete:
+        if os.path.isfile(target): 
+            shutil.copyfile(file, target)
+        return target
+    else:
+        if os.path.isfile(target): 
+            os.remove(target)
+        return file
 
 def DeleteTempFile(filename: str) -> None:
     file_path = os.path.join(tempfile.gettempdir(), filename)
